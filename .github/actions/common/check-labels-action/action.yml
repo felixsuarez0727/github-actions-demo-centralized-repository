@@ -1,0 +1,36 @@
+name: 'Check PR Labels'
+description: 'Check if PR has required labels for deployment'
+
+inputs:
+  pr_number:
+    description: 'The pull request number'
+    required: true
+  github_token:
+    description: 'GitHub token'
+    required: true
+
+outputs:
+  environments:
+    description: 'JSON string array of environments to deploy'
+    value: ${{ steps.pr_labels.outputs.environments }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Get PR labels from GitHub API
+      id: pr_labels
+      shell: bash
+      run: |
+        PR_NUMBER="${{ inputs.pr_number }}"
+        GITHUB_TOKEN="${{ inputs.github_token }}"
+
+        PR_LABELS=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
+          "https://api.github.com/repos/${{ github.repository }}/issues/${PR_NUMBER}/labels")
+
+        ENVIRONMENTS=$(echo "$PR_LABELS" | jq -rc '[.[]?.name | ascii_downcase | 
+          select(test("avalon|zircon")) | "production-\(.)"]')
+
+        ENVIRONMENTS=${ENVIRONMENTS:-'["none"]'}
+
+        echo "Environments: $ENVIRONMENTS"
+        echo "environments=$ENVIRONMENTS" >> $GITHUB_OUTPUT
