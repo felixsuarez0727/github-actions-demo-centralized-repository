@@ -34,3 +34,4 @@ runs:
 
         echo "Environments: $ENVIRONMENTS"
         echo "environments=$ENVIRONMENTS" >> $GITHUB_OUTPUT
+
